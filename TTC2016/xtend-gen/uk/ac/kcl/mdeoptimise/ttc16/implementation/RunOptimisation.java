@@ -15,6 +15,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure2;
 import uk.ac.kcl.MDEOptimiseStandaloneSetup;
@@ -36,6 +37,9 @@ public class RunOptimisation {
   @Inject
   private ModelLoadHelper modelLoader;
   
+  /**
+   * Run all experiments
+   */
   public void run() {
     final List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
     final List<String> inputModels = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("TTC_InputRDG_A", "TTC_InputRDG_B", "TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"));
@@ -48,7 +52,11 @@ public class RunOptimisation {
     optSpecs.forEach(_function);
   }
   
+  /**
+   * Run a single experiment and record its outcomes
+   */
   public void runOneExperiment(final String optSpecName, final String inputModelName) {
+    InputOutput.<String>println((((("Starting experiment run for specification \"" + optSpecName) + "\" with input model \"") + inputModelName) + "\""));
     SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
     Date _date = new Date();
     String _format = _simpleDateFormat.format(_date);
@@ -58,6 +66,7 @@ public class RunOptimisation {
     final Optimisation model = ((Optimisation) _loadModel);
     final CRAModelProvider modelProvider = RunOptimisation.injector.<CRAModelProvider>getInstance(CRAModelProvider.class);
     modelProvider.setInputModelName(inputModelName);
+    final long startTime = System.nanoTime();
     SimpleMO _simpleMO = new SimpleMO(50, 10);
     final OptimisationInterpreter interpreter = new OptimisationInterpreter(model, _simpleMO, modelProvider);
     final Set<EObject> optimiserOutcome = interpreter.execute();
@@ -71,6 +80,9 @@ public class RunOptimisation {
       this.setFeature(cl, "name", ("NewClass" + i));
     };
     IterableExtensions.<EObject>forEach(_flatten, _function_1);
+    final long endTime = System.nanoTime();
+    final long totalTime = (endTime - startTime);
+    InputOutput.<String>println((("Total time taken for this experiment: " + Long.valueOf((totalTime / 1000000))) + " milliseconds"));
     modelProvider.storeModels(optimiserOutcome, (pathPrefix + "/final"));
   }
   

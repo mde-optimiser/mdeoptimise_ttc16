@@ -22,6 +22,9 @@ class RunOptimisation {
 	@Inject
 	private ModelLoadHelper modelLoader
 
+	/**
+	 * Run all experiments
+	 */
 	def run() {
 		val optSpecs = #["ttc"]
 		val inputModels = #["TTC_InputRDG_A", "TTC_InputRDG_B", "TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"]
@@ -33,7 +36,12 @@ class RunOptimisation {
 		]
 	}
 
+	/**
+	 * Run a single experiment and record its outcomes
+	 */
 	def runOneExperiment(String optSpecName, String inputModelName) {
+		println("Starting experiment run for specification \"" + optSpecName + "\" with input model \"" + inputModelName + "\"")
+		
 		val pathPrefix = "gen/models/ttc/" + optSpecName + "/" + inputModelName + "/" +
 			new SimpleDateFormat("yyMMdd-HHmmss").format(new Date())
 
@@ -42,6 +50,10 @@ class RunOptimisation {
 
 		val modelProvider = injector.getInstance(CRAModelProvider)
 		modelProvider.setInputModelName (inputModelName)
+		
+		// Start measuring time
+		val startTime = System.nanoTime
+		
 		val interpreter = new OptimisationInterpreter(model, new SimpleMO(50, 10), modelProvider)
 		val optimiserOutcome = interpreter.execute()
 
@@ -50,6 +62,12 @@ class RunOptimisation {
 			cl.setFeature("name", "NewClass" + i)
 		]
 
+		// End time measurement and print result
+		val endTime = System.nanoTime
+		val totalTime = endTime - startTime
+		println("Total time taken for this experiment: " + totalTime/1000000 + " milliseconds")
+		
+		// Store result models
 		modelProvider.storeModels(optimiserOutcome, pathPrefix + "/final")
 	}
 
