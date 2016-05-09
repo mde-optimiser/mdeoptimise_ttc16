@@ -1,6 +1,5 @@
 package uk.ac.kcl.mdeoptimise.ttc16.implementation
 
-import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.EObject
 
 class MaximiseCRA extends AbstractModelQueryFitnessFunction {
@@ -15,7 +14,7 @@ class MaximiseCRA extends AbstractModelQueryFitnessFunction {
 	}
 
 	def double calculateCohesionRatio(EObject model) {
-		(model.getFeature("classes") as EList<EObject>).fold(0.0, [ acc, c |
+		(model.getFeature("classes") as Iterable<EObject>).fold(0.0, [ acc, c |
 			val methods = c.getClassFeatures("Method")
 			val attributes = c.getClassFeatures("Attribute")
 
@@ -45,7 +44,7 @@ class MaximiseCRA extends AbstractModelQueryFitnessFunction {
 	}
 
 	def double calculateCouplingRatio(EObject model) {
-		(model.getFeature("classes") as EList<EObject>).fold(0.0, [ acc, c |
+		(model.getFeature("classes") as Iterable<EObject>).fold(0.0, [ acc, c |
 			acc + calculateCouplingRatio(c, model)
 		])
 	}
@@ -56,7 +55,7 @@ class MaximiseCRA extends AbstractModelQueryFitnessFunction {
 		if (srcMethods.empty) {
 			0.0
 		} else {
-			(model.getFeature("classes") as EList<EObject>).fold(0.0, [ acc, tgtClass |
+			(model.getFeature("classes") as Iterable<EObject>).fold(0.0, [ acc, tgtClass |
 				acc + if (srcClass == tgtClass) {
 					0.0
 				} else {
@@ -96,10 +95,10 @@ class MaximiseCRA extends AbstractModelQueryFitnessFunction {
 	 * Method--attribute dependencies between the two classes
 	 */
 	def double mai(EObject classSrc, EObject classTgt) {
-		val tgtAttributes = classTgt.getClassFeatures("Attribute") as EList<EObject>
+		val tgtAttributes = classTgt.getClassFeatures("Attribute") as Iterable<EObject>
 		val dependencies = classSrc.getClassFeatures("Method").map [ m |
-			(m.getFeature("dataDependency") as EList<EObject>)
-		].flatten.filter[a|tgtAttributes.contains(a)]
+			(m.getFeature("dataDependency") as Iterable<EObject>)
+		].flatten.filter[a|tgtAttributes.exists [ta | ta == a]]
 
 		dependencies.size
 	}
@@ -108,10 +107,10 @@ class MaximiseCRA extends AbstractModelQueryFitnessFunction {
 	 * Method-method dependencies between the two classes
 	 */
 	def double mmi(EObject classSrc, EObject classTgt) {
-		val tgtMethods = classTgt.getClassFeatures("Methods") as EList<EObject>
+		val tgtMethods = classTgt.getClassFeatures("Methods") as Iterable<EObject>
 		val dependencies = classSrc.getClassFeatures("Method").map [ m |
-			(m.getFeature("functionalDependency") as EList<EObject>)
-		].flatten.filter[m|tgtMethods.contains(m)]
+			(m.getFeature("functionalDependency") as Iterable<EObject>)
+		].flatten.filter[m|tgtMethods.exists[tm | tm == m]]
 
 		dependencies.size
 	}

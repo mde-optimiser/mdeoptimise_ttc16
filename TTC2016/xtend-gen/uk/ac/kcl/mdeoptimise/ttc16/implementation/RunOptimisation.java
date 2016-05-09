@@ -17,12 +17,14 @@ import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure2;
 import uk.ac.kcl.MDEOptimiseStandaloneSetup;
 import uk.ac.kcl.interpreter.OptimisationInterpreter;
 import uk.ac.kcl.interpreter.algorithms.SimpleMO;
 import uk.ac.kcl.mDEOptimise.Optimisation;
 import uk.ac.kcl.mdeoptimise.ttc16.implementation.CRAModelProvider;
+import uk.ac.kcl.mdeoptimise.ttc16.implementation.MaximiseCRA;
 import uk.ac.kcl.mdeoptimise.ttc16.implementation.ModelLoadHelper;
 
 @SuppressWarnings("all")
@@ -84,6 +86,23 @@ public class RunOptimisation {
     final long totalTime = (endTime - startTime);
     InputOutput.<String>println((("Total time taken for this experiment: " + Long.valueOf((totalTime / 1000000))) + " milliseconds"));
     modelProvider.storeModels(optimiserOutcome, (pathPrefix + "/final"));
+    final MaximiseCRA craComputer = new MaximiseCRA();
+    final Function1<EObject, Pair<EObject, Double>> _function_2 = (EObject m) -> {
+      double _computeFitness = craComputer.computeFitness(m);
+      return new Pair<EObject, Double>(m, Double.valueOf(_computeFitness));
+    };
+    Iterable<Pair<EObject, Double>> _map_1 = IterableExtensions.<EObject, Pair<EObject, Double>>map(optimiserOutcome, _function_2);
+    final Function1<Pair<EObject, Double>, Double> _function_3 = (Pair<EObject, Double> it) -> {
+      return it.getValue();
+    };
+    List<Pair<EObject, Double>> _sortBy = IterableExtensions.<Pair<EObject, Double>, Double>sortBy(_map_1, _function_3);
+    final Consumer<Pair<EObject, Double>> _function_4 = (Pair<EObject, Double> p) -> {
+      EObject _key = p.getKey();
+      int _hashCode = _key.hashCode();
+      Double _value = p.getValue();
+      System.out.printf("Result model %08x at CRA %02f.\n", Integer.valueOf(_hashCode), _value);
+    };
+    _sortBy.forEach(_function_4);
   }
   
   public Object getFeature(final EObject o, final String feature) {

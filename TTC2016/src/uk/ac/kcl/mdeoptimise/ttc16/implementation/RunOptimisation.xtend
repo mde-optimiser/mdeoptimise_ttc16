@@ -62,13 +62,19 @@ class RunOptimisation {
 			cl.setFeature("name", "NewClass" + i)
 		]
 
-		// End time measurement and print result
+		// End time measurement and print results
 		val endTime = System.nanoTime
 		val totalTime = endTime - startTime
 		println("Total time taken for this experiment: " + totalTime/1000000 + " milliseconds")
 		
 		// Store result models
 		modelProvider.storeModels(optimiserOutcome, pathPrefix + "/final")
+		val craComputer = new MaximiseCRA
+		optimiserOutcome.map[m | 
+			new Pair<EObject, Double> (m, craComputer.computeFitness(m))
+		].sortBy[value].forEach [p |
+			System.out.printf("Result model %08x at CRA %02f.\n", p.key.hashCode, p.value)
+		]
 	}
 
 	def getFeature(EObject o, String feature) {
