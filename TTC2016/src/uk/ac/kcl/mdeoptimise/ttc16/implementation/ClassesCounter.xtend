@@ -1,4 +1,4 @@
-package uk.ac.kcl.mdeoptimise.ttc16
+package uk.ac.kcl.mdeoptimise.ttc16.implementation
 
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.EObject

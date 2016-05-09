@@ -1,4 +1,4 @@
-package uk.ac.kcl.mdeoptimise.ttc16
+package uk.ac.kcl.mdeoptimise.ttc16.implementation
 
 import com.google.inject.Inject
 import java.util.List

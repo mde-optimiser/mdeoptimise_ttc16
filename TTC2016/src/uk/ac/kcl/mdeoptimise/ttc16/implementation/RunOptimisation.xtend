@@ -1,4 +1,4 @@
-package uk.ac.kcl.mdeoptimise.ttc16
+package uk.ac.kcl.mdeoptimise.ttc16.implementation
 
 import com.google.inject.Inject
 import com.google.inject.Injector
@@ -21,7 +21,7 @@ class RunOptimisation {
 	def run() {
 		val pathPrefix = "gen/models/ttc/" + new SimpleDateFormat("yyMMdd-HHmmss").format(new Date())
 		
-		val model = modelLoader.loadModel("src/uk/ac/kcl/mdeoptimise/ttc16/ttc.mopt") as Optimisation
+		val model = modelLoader.loadModel("src/uk/ac/kcl/mdeoptimise/ttc16/opt_specs/ttc.mopt") as Optimisation
 
 		val modelProvider = injector.getInstance(CRAModelProvider)
 		val interpreter = new OptimisationInterpreter(model, new SimpleMO(50, 10), modelProvider)

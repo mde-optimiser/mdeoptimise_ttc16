@@ -2,8 +2,8 @@ basepath <src/uk/ac/kcl/mdeoptimise/ttc16/models>
 
 metamodel <architectureCRA.ecore>
 
-fitness "uk.ac.kcl.mdeoptimise.ttc16.MinimiseClasslessFeatures"
-fitness "uk.ac.kcl.mdeoptimise.ttc16.ClassesCounter"
+fitness "uk.ac.kcl.mdeoptimise.ttc16.implementation.MinimiseClasslessFeatures"
+fitness "uk.ac.kcl.mdeoptimise.ttc16.implementation.ClassesCounter"
 			
 evolve using <craEvolvers.henshin> unit "createClass"
 evolve using <craEvolvers.henshin> unit "assignFeature"
