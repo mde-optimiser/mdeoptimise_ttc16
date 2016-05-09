@@ -2,6 +2,8 @@ package uk.ac.kcl.mdeoptimise.ttc16.implementation
 
 import com.google.inject.Inject
 import com.google.inject.Injector
+import java.io.File
+import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import org.eclipse.emf.common.util.EList
@@ -62,19 +64,27 @@ class RunOptimisation {
 			cl.setFeature("name", "NewClass" + i)
 		]
 
-		// End time measurement and print results
+		// End time measurement
 		val endTime = System.nanoTime
 		val totalTime = endTime - startTime
-		println("Total time taken for this experiment: " + totalTime/1000000 + " milliseconds")
 		
 		// Store result models
 		modelProvider.storeModels(optimiserOutcome, pathPrefix + "/final")
+
+		// Output results
+		val fResults = new File (pathPrefix + "/final/results.txt")
+		val pw = new PrintWriter (fResults)
+		System.out.printf("Total time taken for this experiment: %02d milliseconds.\n", totalTime/1000000)
+		pw.printf("Total time taken for this experiment: %02d milliseconds.\n", totalTime/1000000)
+		
 		val craComputer = new MaximiseCRA
 		optimiserOutcome.map[m | 
 			new Pair<EObject, Double> (m, craComputer.computeFitness(m))
-		].sortBy[value].forEach [p |
-			System.out.printf("Result model %08x at CRA %02f.\n", p.key.hashCode, p.value)
+		].sortBy[-value].forEach [p |
+			System.out.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
+			pw.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
 		]
+		pw.close
 	}
 
 	def getFeature(EObject o, String feature) {
