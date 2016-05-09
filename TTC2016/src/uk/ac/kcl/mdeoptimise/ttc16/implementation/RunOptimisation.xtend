@@ -12,38 +12,52 @@ import uk.ac.kcl.interpreter.algorithms.SimpleMO
 import uk.ac.kcl.mDEOptimise.Optimisation
 
 class RunOptimisation {
-	
+
 	static val Injector injector = new MDEOptimiseStandaloneSetup().createInjectorAndDoEMFRegistration()
-	
+
+	def static void main(String[] args) {
+		injector.getInstance(RunOptimisation).run()
+	}
+
 	@Inject
 	private ModelLoadHelper modelLoader
-	
+
 	def run() {
-		val pathPrefix = "gen/models/ttc/" + new SimpleDateFormat("yyMMdd-HHmmss").format(new Date())
+		val optSpecs = #["ttc"]
+		val inputModels = #["TTC_InputRDG_A", "TTC_InputRDG_B", "TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"]
 		
-		val model = modelLoader.loadModel("src/uk/ac/kcl/mdeoptimise/ttc16/opt_specs/ttc.mopt") as Optimisation
+		optSpecs.forEach[optSpec |
+			inputModels.forEach[input |
+				runOneExperiment(optSpec, input)
+			]
+		]
+	}
+
+	def runOneExperiment(String optSpecName, String inputModelName) {
+		val pathPrefix = "gen/models/ttc/" + optSpecName + "/" + inputModelName + "/" +
+			new SimpleDateFormat("yyMMdd-HHmmss").format(new Date())
+
+		val model = modelLoader.loadModel("src/uk/ac/kcl/mdeoptimise/ttc16/opt_specs/" + optSpecName +
+			".mopt") as Optimisation
 
 		val modelProvider = injector.getInstance(CRAModelProvider)
+		modelProvider.setInputModelName (inputModelName)
 		val interpreter = new OptimisationInterpreter(model, new SimpleMO(50, 10), modelProvider)
 		val optimiserOutcome = interpreter.execute()
 
 		// Ensure all classes have unique names
-		optimiserOutcome.map[cm | cm.getFeature("classes") as EList<EObject>].flatten.forEach[cl, i |
-			cl.setFeature ("name", "NewClass" + i)
+		optimiserOutcome.map[cm|cm.getFeature("classes") as EList<EObject>].flatten.forEach [ cl, i |
+			cl.setFeature("name", "NewClass" + i)
 		]
 
-		modelProvider.storeModels (optimiserOutcome, pathPrefix + "/final")
+		modelProvider.storeModels(optimiserOutcome, pathPrefix + "/final")
 	}
-	
+
 	def getFeature(EObject o, String feature) {
-		o.eGet (o.eClass.getEStructuralFeature(feature))
+		o.eGet(o.eClass.getEStructuralFeature(feature))
 	}
 
 	def setFeature(EObject o, String feature, Object value) {
-		o.eSet (o.eClass.getEStructuralFeature(feature), value)
-	}
-	
-	def static void main(String[] args) {
-		injector.getInstance(RunOptimisation).run()
+		o.eSet(o.eClass.getEStructuralFeature(feature), value)
 	}
 }
