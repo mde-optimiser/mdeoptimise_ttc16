@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="xtend-gen"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="con" path="org.eclipse.xtend.XTEND_CONTAINER"/>
+	<classpathentry kind="lib" path="libraries/com.google.inject_3.0.0.v201312141243.jar"/>
+	<classpathentry kind="lib" path="libraries/mdeoptimise.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.emf.ecore_2.11.2.v20160208-0816.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.emf.common_2.11.1.v20160208-0816.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.xtext_2.9.2.v201603040440.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.xtext.util_2.9.2.v201603040440.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.emf.ecore.xmi_2.11.1.v20160208-0816.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.emf.henshin.interpreter_1.2.0.201502161222.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.emf.henshin.model_1.2.0.201502161222.jar"/>
+	<classpathentry kind="lib" path="libraries/javax.inject_1.0.0.v20091030.jar"/>
+	<classpathentry kind="lib" path="libraries/org.apache.log4j_1.2.15.v201012070815.jar"/>
+	<classpathentry kind="lib" path="libraries/org.antlr.runtime_3.2.0.v201101311130.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.core.runtime.compatibility_3.2.300.v20150423-0821.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.equinox.common_3.7.0.v20150402-1709.jar"/>
+	<classpathentry kind="lib" path="libraries/org.eclipse.xtext.common.types_2.9.2.v201603040440.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
