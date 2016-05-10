@@ -64,7 +64,7 @@ class RunOptimisation {
 			pw.println("Overall results for this experiment")
 			pw.println("===================================")
 			pw.println
-			pw.printf("Average time taken: %02f milliseconds.\n", lResults.fold(0.0, [acc, r|acc + r.timeTaken]))
+			pw.printf("Average time taken: %02f milliseconds.\n", lResults.fold(0.0, [acc, r|acc + r.timeTaken])/lResults.size)
 			val bestResult = lResults.maxBy[maxCRA]
 			pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
 				bestResult.bestModelHashCode, (if (bestResult.hasUnassignedFeatures) {
@@ -116,23 +116,30 @@ class RunOptimisation {
 		val featureCounter = new MinimiseClasslessFeatures
 
 		results.timeTaken = totalTime / 1000000
-		val sortedResults = optimiserOutcome.map [ m |
+		val sortedResults = optimiserOutcome.filter [ m |
+			featureCounter.computeFitness(m) == 0
+		].map [ m |
 			new Pair<EObject, Double>(m, craComputer.computeFitness(m))
 		].sortBy[-value]
-		val bestModel = sortedResults.head.key
-		results.bestModelHashCode = bestModel.hashCode
-		results.maxCRA = sortedResults.head.value
-		results.hasUnassignedFeatures = (featureCounter.computeFitness(bestModel) != 0)
+		if (sortedResults.empty) {
+			println("No valid results for this run")
+		} else {
+			val bestModel = sortedResults.head.key
+			results.bestModelHashCode = bestModel.hashCode
+			results.maxCRA = sortedResults.head.value
+			results.hasUnassignedFeatures = (featureCounter.computeFitness(bestModel) != 0)
 
-		val fResults = new File(pathPrefix + "/final/results.txt")
-		val pw = new PrintWriter(fResults)
-		System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
-		pw.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
-		sortedResults.forEach [ p |
-			System.out.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
-			pw.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
-		]
-		pw.close
+			val fResults = new File(pathPrefix + "/final/results.txt")
+			val pw = new PrintWriter(fResults)
+			System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
+			pw.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
+			sortedResults.forEach [ p |
+				System.out.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
+				pw.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
+			]
+			pw.close
+
+		}
 
 		return results
 	}

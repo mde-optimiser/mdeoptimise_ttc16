@@ -23,6 +23,7 @@ import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure2;
@@ -103,7 +104,9 @@ public class RunOptimisation {
           return Double.valueOf(((acc).doubleValue() + r.timeTaken));
         };
         Double _fold = IterableExtensions.<RunOptimisation.ResultRecord, Double>fold(lResults, Double.valueOf(0.0), _function_2);
-        pw.printf("Average time taken: %02f milliseconds.\n", _fold);
+        int _size = lResults.size();
+        double _divide = ((_fold).doubleValue() / _size);
+        pw.printf("Average time taken: %02f milliseconds.\n", Double.valueOf(_divide));
         final Function1<RunOptimisation.ResultRecord, Double> _function_3 = (RunOptimisation.ResultRecord it) -> {
           return Double.valueOf(it.maxCRA);
         };
@@ -160,42 +163,52 @@ public class RunOptimisation {
       final MaximiseCRA craComputer = new MaximiseCRA();
       final MinimiseClasslessFeatures featureCounter = new MinimiseClasslessFeatures();
       results.timeTaken = (totalTime / 1000000);
-      final Function1<EObject, Pair<EObject, Double>> _function_2 = (EObject m) -> {
+      final Function1<EObject, Boolean> _function_2 = (EObject m) -> {
+        double _computeFitness = featureCounter.computeFitness(m);
+        return Boolean.valueOf((_computeFitness == 0));
+      };
+      Iterable<EObject> _filter = IterableExtensions.<EObject>filter(optimiserOutcome, _function_2);
+      final Function1<EObject, Pair<EObject, Double>> _function_3 = (EObject m) -> {
         double _computeFitness = craComputer.computeFitness(m);
         return new Pair<EObject, Double>(m, Double.valueOf(_computeFitness));
       };
-      Iterable<Pair<EObject, Double>> _map_1 = IterableExtensions.<EObject, Pair<EObject, Double>>map(optimiserOutcome, _function_2);
-      final Function1<Pair<EObject, Double>, Double> _function_3 = (Pair<EObject, Double> it) -> {
+      Iterable<Pair<EObject, Double>> _map_1 = IterableExtensions.<EObject, Pair<EObject, Double>>map(_filter, _function_3);
+      final Function1<Pair<EObject, Double>, Double> _function_4 = (Pair<EObject, Double> it) -> {
         Double _value = it.getValue();
         return Double.valueOf(DoubleExtensions.operator_minus(_value));
       };
-      final List<Pair<EObject, Double>> sortedResults = IterableExtensions.<Pair<EObject, Double>, Double>sortBy(_map_1, _function_3);
-      Pair<EObject, Double> _head = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
-      final EObject bestModel = _head.getKey();
-      int _hashCode = bestModel.hashCode();
-      results.bestModelHashCode = _hashCode;
-      Pair<EObject, Double> _head_1 = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
-      Double _value = _head_1.getValue();
-      results.maxCRA = (_value).doubleValue();
-      double _computeFitness = featureCounter.computeFitness(bestModel);
-      boolean _notEquals = (_computeFitness != 0);
-      results.hasUnassignedFeatures = _notEquals;
-      final File fResults = new File((pathPrefix + "/final/results.txt"));
-      final PrintWriter pw = new PrintWriter(fResults);
-      System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
-      pw.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
-      final Consumer<Pair<EObject, Double>> _function_4 = (Pair<EObject, Double> p) -> {
-        EObject _key = p.getKey();
-        int _hashCode_1 = _key.hashCode();
-        Double _value_1 = p.getValue();
-        System.out.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_1), _value_1);
-        EObject _key_1 = p.getKey();
-        int _hashCode_2 = _key_1.hashCode();
-        Double _value_2 = p.getValue();
-        pw.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_2), _value_2);
-      };
-      sortedResults.forEach(_function_4);
-      pw.close();
+      final List<Pair<EObject, Double>> sortedResults = IterableExtensions.<Pair<EObject, Double>, Double>sortBy(_map_1, _function_4);
+      boolean _isEmpty = sortedResults.isEmpty();
+      if (_isEmpty) {
+        InputOutput.<String>println("No valid results for this run");
+      } else {
+        Pair<EObject, Double> _head = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
+        final EObject bestModel = _head.getKey();
+        int _hashCode = bestModel.hashCode();
+        results.bestModelHashCode = _hashCode;
+        Pair<EObject, Double> _head_1 = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
+        Double _value = _head_1.getValue();
+        results.maxCRA = (_value).doubleValue();
+        double _computeFitness = featureCounter.computeFitness(bestModel);
+        boolean _notEquals = (_computeFitness != 0);
+        results.hasUnassignedFeatures = _notEquals;
+        final File fResults = new File((pathPrefix + "/final/results.txt"));
+        final PrintWriter pw = new PrintWriter(fResults);
+        System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
+        pw.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
+        final Consumer<Pair<EObject, Double>> _function_5 = (Pair<EObject, Double> p) -> {
+          EObject _key = p.getKey();
+          int _hashCode_1 = _key.hashCode();
+          Double _value_1 = p.getValue();
+          System.out.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_1), _value_1);
+          EObject _key_1 = p.getKey();
+          int _hashCode_2 = _key_1.hashCode();
+          Double _value_2 = p.getValue();
+          pw.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_2), _value_2);
+        };
+        sortedResults.forEach(_function_5);
+        pw.close();
+      }
       return results;
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
