@@ -63,7 +63,7 @@ public class RunOptimisation {
    */
   public void run() {
     final List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
-    final List<String> inputModels = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("TTC_InputRDG_A", "TTC_InputRDG_B", "TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"));
+    final List<String> inputModels = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"));
     final HashMap<Pair<String, String>, List<RunOptimisation.ResultRecord>> resultCollector = new HashMap<Pair<String, String>, List<RunOptimisation.ResultRecord>>();
     final Consumer<String> _function = (String optSpec) -> {
       final Consumer<String> _function_1 = (String input) -> {
@@ -143,7 +143,7 @@ public class RunOptimisation {
       final CRAModelProvider modelProvider = RunOptimisation.injector.<CRAModelProvider>getInstance(CRAModelProvider.class);
       modelProvider.setInputModelName(inputModelName);
       final long startTime = System.nanoTime();
-      SimpleMO _simpleMO = new SimpleMO(50, 10);
+      SimpleMO _simpleMO = new SimpleMO(1000, 50);
       final OptimisationInterpreter interpreter = new OptimisationInterpreter(model, _simpleMO, modelProvider);
       final Set<EObject> optimiserOutcome = interpreter.execute();
       final Function1<EObject, EList<EObject>> _function = (EObject cm) -> {

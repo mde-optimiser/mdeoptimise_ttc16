@@ -39,7 +39,8 @@ class RunOptimisation {
 	 */
 	def run() {
 		val optSpecs = #["ttc"]
-		val inputModels = #["TTC_InputRDG_A", "TTC_InputRDG_B", "TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"]
+		val inputModels = #[//"TTC_InputRDG_A", "TTC_InputRDG_B", 
+		"TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"]
 
 		// pick up results from the experiments
 		val resultCollector = new HashMap<Pair<String, String>, List<ResultRecord>>
@@ -95,7 +96,7 @@ class RunOptimisation {
 		// Start measuring time
 		val startTime = System.nanoTime
 
-		val interpreter = new OptimisationInterpreter(model, new SimpleMO(50, 10), modelProvider)
+		val interpreter = new OptimisationInterpreter(model, new SimpleMO(1000, 50), modelProvider)
 		val optimiserOutcome = interpreter.execute()
 
 		// Ensure all classes have unique names
