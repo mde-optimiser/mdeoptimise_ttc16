@@ -8,6 +8,8 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -18,8 +20,9 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.DoubleExtensions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.InputOutput;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure2;
@@ -29,10 +32,21 @@ import uk.ac.kcl.interpreter.algorithms.SimpleMO;
 import uk.ac.kcl.mDEOptimise.Optimisation;
 import uk.ac.kcl.mdeoptimise.ttc16.implementation.CRAModelProvider;
 import uk.ac.kcl.mdeoptimise.ttc16.implementation.MaximiseCRA;
+import uk.ac.kcl.mdeoptimise.ttc16.implementation.MinimiseClasslessFeatures;
 import uk.ac.kcl.mdeoptimise.ttc16.implementation.ModelLoadHelper;
 
 @SuppressWarnings("all")
 public class RunOptimisation {
+  private static class ResultRecord {
+    public double timeTaken;
+    
+    public double maxCRA;
+    
+    public long bestModelHashCode;
+    
+    public boolean hasUnassignedFeatures;
+  }
+  
   private final static Injector injector = new MDEOptimiseStandaloneSetup().createInjectorAndDoEMFRegistration();
   
   public static void main(final String[] args) {
@@ -49,25 +63,71 @@ public class RunOptimisation {
   public void run() {
     final List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
     final List<String> inputModels = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("TTC_InputRDG_A", "TTC_InputRDG_B", "TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"));
+    final HashMap<Pair<String, String>, List<RunOptimisation.ResultRecord>> resultCollector = new HashMap<Pair<String, String>, List<RunOptimisation.ResultRecord>>();
     final Consumer<String> _function = (String optSpec) -> {
       final Consumer<String> _function_1 = (String input) -> {
-        this.runOneExperiment(optSpec, input);
+        final LinkedList<RunOptimisation.ResultRecord> lResults = new LinkedList<RunOptimisation.ResultRecord>();
+        ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, 10, true);
+        final Consumer<Integer> _function_2 = (Integer idx) -> {
+          RunOptimisation.ResultRecord _runOneExperiment = this.runOneExperiment(optSpec, input, (idx).intValue());
+          lResults.add(_runOneExperiment);
+        };
+        _doubleDotLessThan.forEach(_function_2);
+        Pair<String, String> _pair = new Pair<String, String>(optSpec, input);
+        resultCollector.put(_pair, lResults);
       };
       inputModels.forEach(_function_1);
     };
     optSpecs.forEach(_function);
+    Set<Pair<String, String>> _keySet = resultCollector.keySet();
+    final Consumer<Pair<String, String>> _function_1 = (Pair<String, String> experiment) -> {
+      try {
+        final List<RunOptimisation.ResultRecord> lResults = resultCollector.get(experiment);
+        String _key = experiment.getKey();
+        String _plus = ("gen/models/ttc/" + _key);
+        String _plus_1 = (_plus + "/");
+        String _value = experiment.getValue();
+        String _plus_2 = (_plus_1 + _value);
+        String _plus_3 = (_plus_2 + "/overall_results");
+        SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
+        Date _date = new Date();
+        String _format = _simpleDateFormat.format(_date);
+        String _plus_4 = (_plus_3 + _format);
+        String _plus_5 = (_plus_4 + ".txt");
+        final File f = new File(_plus_5);
+        final PrintWriter pw = new PrintWriter(f);
+        pw.println("Overall results for this experiment");
+        pw.println("===================================");
+        pw.println();
+        final Function2<Double, RunOptimisation.ResultRecord, Double> _function_2 = (Double acc, RunOptimisation.ResultRecord r) -> {
+          return Double.valueOf(((acc).doubleValue() + r.timeTaken));
+        };
+        Double _fold = IterableExtensions.<RunOptimisation.ResultRecord, Double>fold(lResults, Double.valueOf(0.0), _function_2);
+        pw.printf("Average time taken: %02f milliseconds.\n", _fold);
+        final Function1<RunOptimisation.ResultRecord, Double> _function_3 = (RunOptimisation.ResultRecord it) -> {
+          return Double.valueOf(it.maxCRA);
+        };
+        final RunOptimisation.ResultRecord bestResult = IterableExtensions.<RunOptimisation.ResultRecord, Double>maxBy(lResults, _function_3);
+        pw.printf("Best CRA was %02f for model with hash code %08X.\n", Double.valueOf(bestResult.maxCRA), 
+          Long.valueOf(bestResult.bestModelHashCode));
+        pw.close();
+      } catch (Throwable _e) {
+        throw Exceptions.sneakyThrow(_e);
+      }
+    };
+    _keySet.forEach(_function_1);
   }
   
   /**
    * Run a single experiment and record its outcomes
    */
-  public void runOneExperiment(final String optSpecName, final String inputModelName) {
+  public RunOptimisation.ResultRecord runOneExperiment(final String optSpecName, final String inputModelName, final int runIdx) {
     try {
-      InputOutput.<String>println((((("Starting experiment run for specification \"" + optSpecName) + "\" with input model \"") + inputModelName) + "\""));
+      System.out.printf("Starting %01dth experiment run for specification \"%s\" with input model \"%s\".\n", Integer.valueOf(runIdx), optSpecName, inputModelName);
       SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
       Date _date = new Date();
       String _format = _simpleDateFormat.format(_date);
-      final String pathPrefix = ((((("gen/models/ttc/" + optSpecName) + "/") + inputModelName) + "/") + _format);
+      final String pathPrefix = ((((((("gen/models/ttc/" + optSpecName) + "/") + inputModelName) + "/") + Integer.valueOf(runIdx)) + "/") + _format);
       EObject _loadModel = this.modelLoader.loadModel((("src/uk/ac/kcl/mdeoptimise/ttc16/opt_specs/" + optSpecName) + 
         ".mopt"));
       final Optimisation model = ((Optimisation) _loadModel);
@@ -90,11 +150,10 @@ public class RunOptimisation {
       final long endTime = System.nanoTime();
       final long totalTime = (endTime - startTime);
       modelProvider.storeModels(optimiserOutcome, (pathPrefix + "/final"));
-      final File fResults = new File((pathPrefix + "/final/results.txt"));
-      final PrintWriter pw = new PrintWriter(fResults);
-      System.out.printf("Total time taken for this experiment: %02d milliseconds.\n", Long.valueOf((totalTime / 1000000)));
-      pw.printf("Total time taken for this experiment: %02d milliseconds.\n", Long.valueOf((totalTime / 1000000)));
+      final RunOptimisation.ResultRecord results = new RunOptimisation.ResultRecord();
       final MaximiseCRA craComputer = new MaximiseCRA();
+      final MinimiseClasslessFeatures featureCounter = new MinimiseClasslessFeatures();
+      results.timeTaken = (totalTime / 1000000);
       final Function1<EObject, Pair<EObject, Double>> _function_2 = (EObject m) -> {
         double _computeFitness = craComputer.computeFitness(m);
         return new Pair<EObject, Double>(m, Double.valueOf(_computeFitness));
@@ -104,19 +163,34 @@ public class RunOptimisation {
         Double _value = it.getValue();
         return Double.valueOf(DoubleExtensions.operator_minus(_value));
       };
-      List<Pair<EObject, Double>> _sortBy = IterableExtensions.<Pair<EObject, Double>, Double>sortBy(_map_1, _function_3);
+      final List<Pair<EObject, Double>> sortedResults = IterableExtensions.<Pair<EObject, Double>, Double>sortBy(_map_1, _function_3);
+      Pair<EObject, Double> _head = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
+      final EObject bestModel = _head.getKey();
+      int _hashCode = bestModel.hashCode();
+      results.bestModelHashCode = _hashCode;
+      Pair<EObject, Double> _head_1 = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
+      Double _value = _head_1.getValue();
+      results.maxCRA = (_value).doubleValue();
+      double _computeFitness = featureCounter.computeFitness(bestModel);
+      boolean _notEquals = (_computeFitness != 0);
+      results.hasUnassignedFeatures = _notEquals;
+      final File fResults = new File((pathPrefix + "/final/results.txt"));
+      final PrintWriter pw = new PrintWriter(fResults);
+      System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
+      pw.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
       final Consumer<Pair<EObject, Double>> _function_4 = (Pair<EObject, Double> p) -> {
         EObject _key = p.getKey();
-        int _hashCode = _key.hashCode();
-        Double _value = p.getValue();
-        System.out.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode), _value);
-        EObject _key_1 = p.getKey();
-        int _hashCode_1 = _key_1.hashCode();
+        int _hashCode_1 = _key.hashCode();
         Double _value_1 = p.getValue();
-        pw.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_1), _value_1);
+        System.out.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_1), _value_1);
+        EObject _key_1 = p.getKey();
+        int _hashCode_2 = _key_1.hashCode();
+        Double _value_2 = p.getValue();
+        pw.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_2), _value_2);
       };
-      _sortBy.forEach(_function_4);
+      sortedResults.forEach(_function_4);
       pw.close();
+      return results;
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }

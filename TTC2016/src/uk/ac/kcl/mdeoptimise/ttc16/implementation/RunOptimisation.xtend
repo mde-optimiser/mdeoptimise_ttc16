@@ -6,6 +6,9 @@ import java.io.File
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.HashMap
+import java.util.LinkedList
+import java.util.List
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.EObject
 import uk.ac.kcl.MDEOptimiseStandaloneSetup
@@ -24,38 +27,70 @@ class RunOptimisation {
 	@Inject
 	private ModelLoadHelper modelLoader
 
+	private static class ResultRecord {
+		public double timeTaken
+		public double maxCRA
+		public long bestModelHashCode
+		public boolean hasUnassignedFeatures
+	}
+
 	/**
 	 * Run all experiments
 	 */
 	def run() {
 		val optSpecs = #["ttc"]
 		val inputModels = #["TTC_InputRDG_A", "TTC_InputRDG_B", "TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"]
-		
-		optSpecs.forEach[optSpec |
-			inputModels.forEach[input |
-				runOneExperiment(optSpec, input)
+
+		// pick up results from the experiments
+		val resultCollector = new HashMap<Pair<String, String>, List<ResultRecord>>
+
+		optSpecs.forEach [ optSpec |
+			inputModels.forEach [ input |
+				val lResults = new LinkedList<ResultRecord>()
+				(0 ..< 10).forEach [ idx |
+					lResults.add(runOneExperiment(optSpec, input, idx))
+				]
+				resultCollector.put(new Pair<String, String>(optSpec, input), lResults)
 			]
+		]
+
+		// Write averaged results
+		resultCollector.keySet.forEach [ experiment |
+			val lResults = resultCollector.get(experiment)
+			val File f = new File(
+				"gen/models/ttc/" + experiment.key + "/" + experiment.value + "/overall_results" +
+					new SimpleDateFormat("yyMMdd-HHmmss").format(new Date()) + ".txt")
+			val PrintWriter pw = new PrintWriter(f)
+			pw.println("Overall results for this experiment")
+			pw.println("===================================")
+			pw.println
+			pw.printf("Average time taken: %02f milliseconds.\n", lResults.fold(0.0, [acc, r|acc + r.timeTaken]))
+			val bestResult = lResults.maxBy[maxCRA]
+			pw.printf("Best CRA was %02f for model with hash code %08X.\n", bestResult.maxCRA,
+				bestResult.bestModelHashCode)
+			pw.close
 		]
 	}
 
 	/**
 	 * Run a single experiment and record its outcomes
 	 */
-	def runOneExperiment(String optSpecName, String inputModelName) {
-		println("Starting experiment run for specification \"" + optSpecName + "\" with input model \"" + inputModelName + "\"")
-		
-		val pathPrefix = "gen/models/ttc/" + optSpecName + "/" + inputModelName + "/" +
+	def ResultRecord runOneExperiment(String optSpecName, String inputModelName, int runIdx) {
+		System.out.printf("Starting %01dth experiment run for specification \"%s\" with input model \"%s\".\n", runIdx,
+			optSpecName, inputModelName)
+
+		val pathPrefix = "gen/models/ttc/" + optSpecName + "/" + inputModelName + "/" + runIdx + "/" +
 			new SimpleDateFormat("yyMMdd-HHmmss").format(new Date())
 
 		val model = modelLoader.loadModel("src/uk/ac/kcl/mdeoptimise/ttc16/opt_specs/" + optSpecName +
 			".mopt") as Optimisation
 
 		val modelProvider = injector.getInstance(CRAModelProvider)
-		modelProvider.setInputModelName (inputModelName)
-		
+		modelProvider.setInputModelName(inputModelName)
+
 		// Start measuring time
 		val startTime = System.nanoTime
-		
+
 		val interpreter = new OptimisationInterpreter(model, new SimpleMO(50, 10), modelProvider)
 		val optimiserOutcome = interpreter.execute()
 
@@ -67,24 +102,35 @@ class RunOptimisation {
 		// End time measurement
 		val endTime = System.nanoTime
 		val totalTime = endTime - startTime
-		
+
 		// Store result models
 		modelProvider.storeModels(optimiserOutcome, pathPrefix + "/final")
 
 		// Output results
-		val fResults = new File (pathPrefix + "/final/results.txt")
-		val pw = new PrintWriter (fResults)
-		System.out.printf("Total time taken for this experiment: %02d milliseconds.\n", totalTime/1000000)
-		pw.printf("Total time taken for this experiment: %02d milliseconds.\n", totalTime/1000000)
-		
+		val results = new ResultRecord
 		val craComputer = new MaximiseCRA
-		optimiserOutcome.map[m | 
-			new Pair<EObject, Double> (m, craComputer.computeFitness(m))
-		].sortBy[-value].forEach [p |
+		val featureCounter = new MinimiseClasslessFeatures
+
+		results.timeTaken = totalTime / 1000000
+		val sortedResults = optimiserOutcome.map [ m |
+			new Pair<EObject, Double>(m, craComputer.computeFitness(m))
+		].sortBy[-value]
+		val bestModel = sortedResults.head.key
+		results.bestModelHashCode = bestModel.hashCode
+		results.maxCRA = sortedResults.head.value
+		results.hasUnassignedFeatures = (featureCounter.computeFitness(bestModel) != 0)
+
+		val fResults = new File(pathPrefix + "/final/results.txt")
+		val pw = new PrintWriter(fResults)
+		System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
+		pw.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
+		sortedResults.forEach [ p |
 			System.out.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
 			pw.printf("Result model %08X at CRA %02f.\n", p.key.hashCode, p.value)
 		]
 		pw.close
+
+		return results
 	}
 
 	def getFeature(EObject o, String feature) {
