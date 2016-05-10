@@ -66,8 +66,12 @@ class RunOptimisation {
 			pw.println
 			pw.printf("Average time taken: %02f milliseconds.\n", lResults.fold(0.0, [acc, r|acc + r.timeTaken]))
 			val bestResult = lResults.maxBy[maxCRA]
-			pw.printf("Best CRA was %02f for model with hash code %08X.\n", bestResult.maxCRA,
-				bestResult.bestModelHashCode)
+			pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
+				bestResult.bestModelHashCode, (if (bestResult.hasUnassignedFeatures) {
+					"invalid"
+				} else {
+					"valid"
+				}))
 			pw.close
 		]
 	}

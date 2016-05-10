@@ -108,8 +108,14 @@ public class RunOptimisation {
           return Double.valueOf(it.maxCRA);
         };
         final RunOptimisation.ResultRecord bestResult = IterableExtensions.<RunOptimisation.ResultRecord, Double>maxBy(lResults, _function_3);
-        pw.printf("Best CRA was %02f for model with hash code %08X.\n", Double.valueOf(bestResult.maxCRA), 
-          Long.valueOf(bestResult.bestModelHashCode));
+        String _xifexpression = null;
+        if (bestResult.hasUnassignedFeatures) {
+          _xifexpression = "invalid";
+        } else {
+          _xifexpression = "valid";
+        }
+        pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", Double.valueOf(bestResult.maxCRA), 
+          Long.valueOf(bestResult.bestModelHashCode), _xifexpression);
         pw.close();
       } catch (Throwable _e) {
         throw Exceptions.sneakyThrow(_e);
