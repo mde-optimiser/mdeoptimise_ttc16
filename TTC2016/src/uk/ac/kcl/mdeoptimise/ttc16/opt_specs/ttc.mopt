@@ -4,6 +4,9 @@ metamodel <architectureCRA.ecore>
 
 fitness "uk.ac.kcl.mdeoptimise.ttc16.implementation.MinimiseClasslessFeatures"
 fitness "uk.ac.kcl.mdeoptimise.ttc16.implementation.ClassesCounter"
+fitness "uk.ac.kcl.mdeoptimise.ttc16.implementation.MaximiseCRA"
 			
 evolve using <craEvolvers.henshin> unit "createClass"
 evolve using <craEvolvers.henshin> unit "assignFeature"
+evolve using <craEvolvers.henshin> unit "moveFeature"
+evolve using <craEvolvers.henshin> unit "deleteEmptyClass"
