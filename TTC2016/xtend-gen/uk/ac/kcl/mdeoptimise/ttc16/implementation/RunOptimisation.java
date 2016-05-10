@@ -183,26 +183,24 @@ public class RunOptimisation {
         InputOutput.<String>println("No valid results for this run");
       } else {
         Pair<EObject, Double> _head = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
-        final EObject bestModel = _head.getKey();
-        int _hashCode = bestModel.hashCode();
+        EObject _key = _head.getKey();
+        int _hashCode = _key.hashCode();
         results.bestModelHashCode = _hashCode;
         Pair<EObject, Double> _head_1 = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
         Double _value = _head_1.getValue();
         results.maxCRA = (_value).doubleValue();
-        double _computeFitness = featureCounter.computeFitness(bestModel);
-        boolean _notEquals = (_computeFitness != 0);
-        results.hasUnassignedFeatures = _notEquals;
+        results.hasUnassignedFeatures = false;
         final File fResults = new File((pathPrefix + "/final/results.txt"));
         final PrintWriter pw = new PrintWriter(fResults);
         System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
         pw.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
         final Consumer<Pair<EObject, Double>> _function_5 = (Pair<EObject, Double> p) -> {
-          EObject _key = p.getKey();
-          int _hashCode_1 = _key.hashCode();
+          EObject _key_1 = p.getKey();
+          int _hashCode_1 = _key_1.hashCode();
           Double _value_1 = p.getValue();
           System.out.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_1), _value_1);
-          EObject _key_1 = p.getKey();
-          int _hashCode_2 = _key_1.hashCode();
+          EObject _key_2 = p.getKey();
+          int _hashCode_2 = _key_2.hashCode();
           Double _value_2 = p.getValue();
           pw.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_2), _value_2);
         };

@@ -124,10 +124,9 @@ class RunOptimisation {
 		if (sortedResults.empty) {
 			println("No valid results for this run")
 		} else {
-			val bestModel = sortedResults.head.key
-			results.bestModelHashCode = bestModel.hashCode
+			results.bestModelHashCode = sortedResults.head.key.hashCode
 			results.maxCRA = sortedResults.head.value
-			results.hasUnassignedFeatures = (featureCounter.computeFitness(bestModel) != 0)
+			results.hasUnassignedFeatures = false
 
 			val fResults = new File(pathPrefix + "/final/results.txt")
 			val pw = new PrintWriter(fResults)
