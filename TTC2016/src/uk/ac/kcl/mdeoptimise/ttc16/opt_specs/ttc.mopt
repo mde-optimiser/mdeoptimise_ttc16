@@ -10,3 +10,4 @@ evolve using <craEvolvers.henshin> unit "createClass"
 evolve using <craEvolvers.henshin> unit "assignFeature"
 evolve using <craEvolvers.henshin> unit "moveFeature"
 evolve using <craEvolvers.henshin> unit "deleteEmptyClass"
+

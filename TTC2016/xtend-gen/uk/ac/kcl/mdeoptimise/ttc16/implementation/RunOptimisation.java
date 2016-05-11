@@ -8,7 +8,6 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -64,67 +63,53 @@ public class RunOptimisation {
   public void run() {
     final List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
     final List<String> inputModels = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"));
-    final HashMap<Pair<String, String>, List<RunOptimisation.ResultRecord>> resultCollector = new HashMap<Pair<String, String>, List<RunOptimisation.ResultRecord>>();
     final Consumer<String> _function = (String optSpec) -> {
       final Consumer<String> _function_1 = (String input) -> {
-        final LinkedList<RunOptimisation.ResultRecord> lResults = new LinkedList<RunOptimisation.ResultRecord>();
-        ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, 10, true);
-        final Consumer<Integer> _function_2 = (Integer idx) -> {
-          RunOptimisation.ResultRecord _runOneExperiment = this.runOneExperiment(optSpec, input, (idx).intValue());
-          lResults.add(_runOneExperiment);
-        };
-        _doubleDotLessThan.forEach(_function_2);
-        Pair<String, String> _pair = new Pair<String, String>(optSpec, input);
-        resultCollector.put(_pair, lResults);
+        try {
+          final LinkedList<RunOptimisation.ResultRecord> lResults = new LinkedList<RunOptimisation.ResultRecord>();
+          ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, 10, true);
+          final Consumer<Integer> _function_2 = (Integer idx) -> {
+            RunOptimisation.ResultRecord _runOneExperiment = this.runOneExperiment(optSpec, input, (idx).intValue());
+            lResults.add(_runOneExperiment);
+          };
+          _doubleDotLessThan.forEach(_function_2);
+          SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
+          Date _date = new Date();
+          String _format = _simpleDateFormat.format(_date);
+          String _plus = ((((("gen/models/ttc/" + optSpec) + "/") + input) + "/overall_results") + _format);
+          String _plus_1 = (_plus + ".txt");
+          final File f = new File(_plus_1);
+          final PrintWriter pw = new PrintWriter(f);
+          pw.println("Overall results for this experiment");
+          pw.println("===================================");
+          pw.println();
+          final Function2<Double, RunOptimisation.ResultRecord, Double> _function_3 = (Double acc, RunOptimisation.ResultRecord r) -> {
+            return Double.valueOf(((acc).doubleValue() + r.timeTaken));
+          };
+          Double _fold = IterableExtensions.<RunOptimisation.ResultRecord, Double>fold(lResults, Double.valueOf(0.0), _function_3);
+          int _size = lResults.size();
+          double _divide = ((_fold).doubleValue() / _size);
+          pw.printf("Average time taken: %02f milliseconds.\n", Double.valueOf(_divide));
+          final Function1<RunOptimisation.ResultRecord, Double> _function_4 = (RunOptimisation.ResultRecord it) -> {
+            return Double.valueOf(it.maxCRA);
+          };
+          final RunOptimisation.ResultRecord bestResult = IterableExtensions.<RunOptimisation.ResultRecord, Double>maxBy(lResults, _function_4);
+          String _xifexpression = null;
+          if (bestResult.hasUnassignedFeatures) {
+            _xifexpression = "invalid";
+          } else {
+            _xifexpression = "valid";
+          }
+          pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", Double.valueOf(bestResult.maxCRA), 
+            Long.valueOf(bestResult.bestModelHashCode), _xifexpression);
+          pw.close();
+        } catch (Throwable _e) {
+          throw Exceptions.sneakyThrow(_e);
+        }
       };
       inputModels.forEach(_function_1);
     };
     optSpecs.forEach(_function);
-    Set<Pair<String, String>> _keySet = resultCollector.keySet();
-    final Consumer<Pair<String, String>> _function_1 = (Pair<String, String> experiment) -> {
-      try {
-        final List<RunOptimisation.ResultRecord> lResults = resultCollector.get(experiment);
-        String _key = experiment.getKey();
-        String _plus = ("gen/models/ttc/" + _key);
-        String _plus_1 = (_plus + "/");
-        String _value = experiment.getValue();
-        String _plus_2 = (_plus_1 + _value);
-        String _plus_3 = (_plus_2 + "/overall_results");
-        SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
-        Date _date = new Date();
-        String _format = _simpleDateFormat.format(_date);
-        String _plus_4 = (_plus_3 + _format);
-        String _plus_5 = (_plus_4 + ".txt");
-        final File f = new File(_plus_5);
-        final PrintWriter pw = new PrintWriter(f);
-        pw.println("Overall results for this experiment");
-        pw.println("===================================");
-        pw.println();
-        final Function2<Double, RunOptimisation.ResultRecord, Double> _function_2 = (Double acc, RunOptimisation.ResultRecord r) -> {
-          return Double.valueOf(((acc).doubleValue() + r.timeTaken));
-        };
-        Double _fold = IterableExtensions.<RunOptimisation.ResultRecord, Double>fold(lResults, Double.valueOf(0.0), _function_2);
-        int _size = lResults.size();
-        double _divide = ((_fold).doubleValue() / _size);
-        pw.printf("Average time taken: %02f milliseconds.\n", Double.valueOf(_divide));
-        final Function1<RunOptimisation.ResultRecord, Double> _function_3 = (RunOptimisation.ResultRecord it) -> {
-          return Double.valueOf(it.maxCRA);
-        };
-        final RunOptimisation.ResultRecord bestResult = IterableExtensions.<RunOptimisation.ResultRecord, Double>maxBy(lResults, _function_3);
-        String _xifexpression = null;
-        if (bestResult.hasUnassignedFeatures) {
-          _xifexpression = "invalid";
-        } else {
-          _xifexpression = "valid";
-        }
-        pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", Double.valueOf(bestResult.maxCRA), 
-          Long.valueOf(bestResult.bestModelHashCode), _xifexpression);
-        pw.close();
-      } catch (Throwable _e) {
-        throw Exceptions.sneakyThrow(_e);
-      }
-    };
-    _keySet.forEach(_function_1);
   }
   
   /**

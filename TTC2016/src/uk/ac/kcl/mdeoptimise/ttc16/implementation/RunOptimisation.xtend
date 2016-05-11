@@ -39,11 +39,8 @@ class RunOptimisation {
 	 */
 	def run() {
 		val optSpecs = #["ttc"]
-		val inputModels = #[//"TTC_InputRDG_A", "TTC_InputRDG_B", 
+		val inputModels = #[ // "TTC_InputRDG_A", "TTC_InputRDG_B", 
 		"TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"]
-
-		// pick up results from the experiments
-		val resultCollector = new HashMap<Pair<String, String>, List<ResultRecord>>
 
 		optSpecs.forEach [ optSpec |
 			inputModels.forEach [ input |
@@ -51,29 +48,26 @@ class RunOptimisation {
 				(0 ..< 10).forEach [ idx |
 					lResults.add(runOneExperiment(optSpec, input, idx))
 				]
-				resultCollector.put(new Pair<String, String>(optSpec, input), lResults)
-			]
-		]
 
-		// Write averaged results
-		resultCollector.keySet.forEach [ experiment |
-			val lResults = resultCollector.get(experiment)
-			val File f = new File(
-				"gen/models/ttc/" + experiment.key + "/" + experiment.value + "/overall_results" +
-					new SimpleDateFormat("yyMMdd-HHmmss").format(new Date()) + ".txt")
-			val PrintWriter pw = new PrintWriter(f)
-			pw.println("Overall results for this experiment")
-			pw.println("===================================")
-			pw.println
-			pw.printf("Average time taken: %02f milliseconds.\n", lResults.fold(0.0, [acc, r|acc + r.timeTaken])/lResults.size)
-			val bestResult = lResults.maxBy[maxCRA]
-			pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
-				bestResult.bestModelHashCode, (if (bestResult.hasUnassignedFeatures) {
-					"invalid"
-				} else {
-					"valid"
-				}))
-			pw.close
+				// Write averaged results for this specification and model
+				val File f = new File(
+					"gen/models/ttc/" + optSpec + "/" + input + "/overall_results" +
+						new SimpleDateFormat("yyMMdd-HHmmss").format(new Date()) + ".txt")
+				val PrintWriter pw = new PrintWriter(f)
+				pw.println("Overall results for this experiment")
+				pw.println("===================================")
+				pw.println
+				pw.printf("Average time taken: %02f milliseconds.\n",
+					lResults.fold(0.0, [acc, r|acc + r.timeTaken]) / lResults.size)
+				val bestResult = lResults.maxBy[maxCRA]
+				pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
+					bestResult.bestModelHashCode, (if (bestResult.hasUnassignedFeatures) {
+						"invalid"
+					} else {
+						"valid"
+					}))
+				pw.close
+			]
 		]
 	}
 
