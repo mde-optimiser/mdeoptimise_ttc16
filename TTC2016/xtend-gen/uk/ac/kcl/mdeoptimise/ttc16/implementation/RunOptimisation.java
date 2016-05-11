@@ -47,6 +47,20 @@ public class RunOptimisation {
     public boolean hasUnassignedFeatures;
   }
   
+  private static class InputModelDesc {
+    public String modelName;
+    
+    public int generations;
+    
+    public int populationSize;
+    
+    public InputModelDesc(final String modelName, final int generations, final int populationSize) {
+      this.modelName = modelName;
+      this.generations = generations;
+      this.populationSize = populationSize;
+    }
+  }
+  
   private final static Injector injector = new MDEOptimiseStandaloneSetup().createInjectorAndDoEMFRegistration();
   
   public static void main(final String[] args) {
@@ -62,21 +76,26 @@ public class RunOptimisation {
    */
   public void run() {
     final List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
-    final List<String> inputModels = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("TTC_InputRDG_C", "TTC_InputRDG_D", "TTC_InputRDG_E"));
+    RunOptimisation.InputModelDesc _inputModelDesc = new RunOptimisation.InputModelDesc("TTC_InputRDG_A", 100, 20);
+    RunOptimisation.InputModelDesc _inputModelDesc_1 = new RunOptimisation.InputModelDesc("TTC_InputRDG_B", 100, 20);
+    RunOptimisation.InputModelDesc _inputModelDesc_2 = new RunOptimisation.InputModelDesc("TTC_InputRDG_C", 1000, 50);
+    RunOptimisation.InputModelDesc _inputModelDesc_3 = new RunOptimisation.InputModelDesc("TTC_InputRDG_D", 1000, 50);
+    RunOptimisation.InputModelDesc _inputModelDesc_4 = new RunOptimisation.InputModelDesc("TTC_InputRDG_E", 1000, 50);
+    final List<RunOptimisation.InputModelDesc> inputModels = Collections.<RunOptimisation.InputModelDesc>unmodifiableList(CollectionLiterals.<RunOptimisation.InputModelDesc>newArrayList(_inputModelDesc, _inputModelDesc_1, _inputModelDesc_2, _inputModelDesc_3, _inputModelDesc_4));
     final Consumer<String> _function = (String optSpec) -> {
-      final Consumer<String> _function_1 = (String input) -> {
+      final Consumer<RunOptimisation.InputModelDesc> _function_1 = (RunOptimisation.InputModelDesc inputDesc) -> {
         try {
           final LinkedList<RunOptimisation.ResultRecord> lResults = new LinkedList<RunOptimisation.ResultRecord>();
           ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, 10, true);
           final Consumer<Integer> _function_2 = (Integer idx) -> {
-            RunOptimisation.ResultRecord _runOneExperiment = this.runOneExperiment(optSpec, input, (idx).intValue());
+            RunOptimisation.ResultRecord _runOneExperiment = this.runOneExperiment(optSpec, inputDesc, (idx).intValue());
             lResults.add(_runOneExperiment);
           };
           _doubleDotLessThan.forEach(_function_2);
           SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
           Date _date = new Date();
           String _format = _simpleDateFormat.format(_date);
-          String _plus = ((((("gen/models/ttc/" + optSpec) + "/") + input) + "/overall_results") + _format);
+          String _plus = ((((("gen/models/ttc/" + optSpec) + "/") + inputDesc.modelName) + "/overall_results") + _format);
           String _plus_1 = (_plus + ".txt");
           final File f = new File(_plus_1);
           final PrintWriter pw = new PrintWriter(f);
@@ -115,20 +134,20 @@ public class RunOptimisation {
   /**
    * Run a single experiment and record its outcomes
    */
-  public RunOptimisation.ResultRecord runOneExperiment(final String optSpecName, final String inputModelName, final int runIdx) {
+  public RunOptimisation.ResultRecord runOneExperiment(final String optSpecName, final RunOptimisation.InputModelDesc inputDesc, final int runIdx) {
     try {
-      System.out.printf("Starting %01dth experiment run for specification \"%s\" with input model \"%s\".\n", Integer.valueOf(runIdx), optSpecName, inputModelName);
+      System.out.printf("Starting %01dth experiment run for specification \"%s\" with input model \"%s\".\n", Integer.valueOf(runIdx), optSpecName, inputDesc.modelName);
       SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
       Date _date = new Date();
       String _format = _simpleDateFormat.format(_date);
-      final String pathPrefix = ((((((("gen/models/ttc/" + optSpecName) + "/") + inputModelName) + "/") + Integer.valueOf(runIdx)) + "/") + _format);
+      final String pathPrefix = ((((((("gen/models/ttc/" + optSpecName) + "/") + inputDesc.modelName) + "/") + Integer.valueOf(runIdx)) + "/") + _format);
       EObject _loadModel = this.modelLoader.loadModel((("src/uk/ac/kcl/mdeoptimise/ttc16/opt_specs/" + optSpecName) + 
         ".mopt"));
       final Optimisation model = ((Optimisation) _loadModel);
       final CRAModelProvider modelProvider = RunOptimisation.injector.<CRAModelProvider>getInstance(CRAModelProvider.class);
-      modelProvider.setInputModelName(inputModelName);
+      modelProvider.setInputModelName(inputDesc.modelName);
       final long startTime = System.nanoTime();
-      SimpleMO _simpleMO = new SimpleMO(1000, 50);
+      SimpleMO _simpleMO = new SimpleMO(inputDesc.generations, inputDesc.populationSize);
       final OptimisationInterpreter interpreter = new OptimisationInterpreter(model, _simpleMO, modelProvider);
       final Set<EObject> optimiserOutcome = interpreter.execute();
       final Function1<EObject, EList<EObject>> _function = (EObject cm) -> {
@@ -178,6 +197,7 @@ public class RunOptimisation {
         final File fResults = new File((pathPrefix + "/final/results.txt"));
         final PrintWriter pw = new PrintWriter(fResults);
         System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
+        pw.printf("Experiment using spec \"%s\" and model \"%s\". Running for %01d generations with a population size of %01d.\n\n", optSpecName, inputDesc.modelName, Integer.valueOf(inputDesc.generations), Integer.valueOf(inputDesc.populationSize));
         pw.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
         final Consumer<Pair<EObject, Double>> _function_5 = (Pair<EObject, Double> p) -> {
           EObject _key_1 = p.getKey();
