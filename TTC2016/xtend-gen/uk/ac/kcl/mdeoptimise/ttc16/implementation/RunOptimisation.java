@@ -17,6 +17,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.DoubleExtensions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
@@ -64,74 +65,93 @@ public class RunOptimisation {
   private final static Injector injector = new MDEOptimiseStandaloneSetup().createInjectorAndDoEMFRegistration();
   
   public static void main(final String[] args) {
-    RunOptimisation _instance = RunOptimisation.injector.<RunOptimisation>getInstance(RunOptimisation.class);
-    _instance.run();
+    final RunOptimisation app = RunOptimisation.injector.<RunOptimisation>getInstance(RunOptimisation.class);
+    boolean _isEmpty = ((List<String>)Conversions.doWrapArray(args)).isEmpty();
+    if (_isEmpty) {
+      app.run();
+    } else {
+      String _get = args[0];
+      final int specIdx = Integer.parseInt(_get);
+      String _get_1 = args[1];
+      final int modelIdx = Integer.parseInt(_get_1);
+      String _get_2 = RunOptimisation.optSpecs.get(specIdx);
+      RunOptimisation.InputModelDesc _get_3 = RunOptimisation.inputModels.get(modelIdx);
+      app.runBatchForSpecAndModel(_get_2, _get_3);
+    }
   }
   
   @Inject
   private ModelLoadHelper modelLoader;
   
   /**
+   * Defining the experiments
+   */
+  private final static List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
+  
+  private final static List<RunOptimisation.InputModelDesc> inputModels = Collections.<RunOptimisation.InputModelDesc>unmodifiableList(CollectionLiterals.<RunOptimisation.InputModelDesc>newArrayList(new RunOptimisation.InputModelDesc("TTC_InputRDG_A", 100, 20), new RunOptimisation.InputModelDesc("TTC_InputRDG_B", 100, 20), new RunOptimisation.InputModelDesc("TTC_InputRDG_C", 1000, 50), new RunOptimisation.InputModelDesc("TTC_InputRDG_D", 1000, 50), new RunOptimisation.InputModelDesc("TTC_InputRDG_E", 1000, 50)));
+  
+  /**
    * Run all experiments
    */
   public void run() {
-    final List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
-    RunOptimisation.InputModelDesc _inputModelDesc = new RunOptimisation.InputModelDesc("TTC_InputRDG_A", 100, 20);
-    RunOptimisation.InputModelDesc _inputModelDesc_1 = new RunOptimisation.InputModelDesc("TTC_InputRDG_B", 100, 20);
-    RunOptimisation.InputModelDesc _inputModelDesc_2 = new RunOptimisation.InputModelDesc("TTC_InputRDG_C", 1000, 50);
-    RunOptimisation.InputModelDesc _inputModelDesc_3 = new RunOptimisation.InputModelDesc("TTC_InputRDG_D", 1000, 50);
-    RunOptimisation.InputModelDesc _inputModelDesc_4 = new RunOptimisation.InputModelDesc("TTC_InputRDG_E", 1000, 50);
-    final List<RunOptimisation.InputModelDesc> inputModels = Collections.<RunOptimisation.InputModelDesc>unmodifiableList(CollectionLiterals.<RunOptimisation.InputModelDesc>newArrayList(_inputModelDesc, _inputModelDesc_1, _inputModelDesc_2, _inputModelDesc_3, _inputModelDesc_4));
     final Consumer<String> _function = (String optSpec) -> {
       final Consumer<RunOptimisation.InputModelDesc> _function_1 = (RunOptimisation.InputModelDesc inputDesc) -> {
-        try {
-          final LinkedList<RunOptimisation.ResultRecord> lResults = new LinkedList<RunOptimisation.ResultRecord>();
-          ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, 10, true);
-          final Consumer<Integer> _function_2 = (Integer idx) -> {
-            RunOptimisation.ResultRecord _runOneExperiment = this.runOneExperiment(optSpec, inputDesc, (idx).intValue());
-            lResults.add(_runOneExperiment);
-          };
-          _doubleDotLessThan.forEach(_function_2);
-          SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
-          Date _date = new Date();
-          String _format = _simpleDateFormat.format(_date);
-          String _plus = ((((("gen/models/ttc/" + optSpec) + "/") + inputDesc.modelName) + "/overall_results") + _format);
-          String _plus_1 = (_plus + ".txt");
-          final File f = new File(_plus_1);
-          final PrintWriter pw = new PrintWriter(f);
-          pw.println("Overall results for this experiment");
-          pw.println("===================================");
-          pw.println();
-          pw.printf("Experiment with spec \"%s\" and model \"%s\".\n", optSpec, inputDesc.modelName);
-          pw.printf("Running for %01d generations with a population size of %01d.\n", Integer.valueOf(inputDesc.generations), Integer.valueOf(inputDesc.populationSize));
-          pw.println();
-          final Function2<Double, RunOptimisation.ResultRecord, Double> _function_3 = (Double acc, RunOptimisation.ResultRecord r) -> {
-            return Double.valueOf(((acc).doubleValue() + r.timeTaken));
-          };
-          Double _fold = IterableExtensions.<RunOptimisation.ResultRecord, Double>fold(lResults, Double.valueOf(0.0), _function_3);
-          int _size = lResults.size();
-          double _divide = ((_fold).doubleValue() / _size);
-          pw.printf("Average time taken: %02f milliseconds.\n", Double.valueOf(_divide));
-          final Function1<RunOptimisation.ResultRecord, Double> _function_4 = (RunOptimisation.ResultRecord it) -> {
-            return Double.valueOf(it.maxCRA);
-          };
-          final RunOptimisation.ResultRecord bestResult = IterableExtensions.<RunOptimisation.ResultRecord, Double>maxBy(lResults, _function_4);
-          String _xifexpression = null;
-          if (bestResult.hasUnassignedFeatures) {
-            _xifexpression = "invalid";
-          } else {
-            _xifexpression = "valid";
-          }
-          pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", Double.valueOf(bestResult.maxCRA), 
-            Long.valueOf(bestResult.bestModelHashCode), _xifexpression);
-          pw.close();
-        } catch (Throwable _e) {
-          throw Exceptions.sneakyThrow(_e);
-        }
+        this.runBatchForSpecAndModel(optSpec, inputDesc);
       };
-      inputModels.forEach(_function_1);
+      RunOptimisation.inputModels.forEach(_function_1);
     };
-    optSpecs.forEach(_function);
+    RunOptimisation.optSpecs.forEach(_function);
+  }
+  
+  /**
+   * Run a batch of experiments for the given spec and model, recording overall outcomes in a separate file.
+   */
+  public void runBatchForSpecAndModel(final String optSpec, final RunOptimisation.InputModelDesc inputDesc) {
+    try {
+      final LinkedList<RunOptimisation.ResultRecord> lResults = new LinkedList<RunOptimisation.ResultRecord>();
+      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, 10, true);
+      final Consumer<Integer> _function = (Integer idx) -> {
+        RunOptimisation.ResultRecord _runOneExperiment = this.runOneExperiment(optSpec, inputDesc, (idx).intValue());
+        lResults.add(_runOneExperiment);
+      };
+      _doubleDotLessThan.forEach(_function);
+      SimpleDateFormat _simpleDateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
+      Date _date = new Date();
+      String _format = _simpleDateFormat.format(_date);
+      String _plus = ((((("gen/models/ttc/" + optSpec) + "/") + inputDesc.modelName) + "/overall_results") + _format);
+      String _plus_1 = (_plus + ".txt");
+      final File f = new File(_plus_1);
+      final PrintWriter pw = new PrintWriter(f);
+      pw.println("Overall results for this experiment");
+      pw.println("===================================");
+      pw.println();
+      pw.printf("Experiment with spec \"%s\" and model \"%s\".\n", optSpec, inputDesc.modelName);
+      pw.printf("Running for %01d generations with a population size of %01d.\n", Integer.valueOf(inputDesc.generations), 
+        Integer.valueOf(inputDesc.populationSize));
+      pw.println();
+      final Function2<Double, RunOptimisation.ResultRecord, Double> _function_1 = (Double acc, RunOptimisation.ResultRecord r) -> {
+        return Double.valueOf(((acc).doubleValue() + r.timeTaken));
+      };
+      Double _fold = IterableExtensions.<RunOptimisation.ResultRecord, Double>fold(lResults, Double.valueOf(0.0), _function_1);
+      int _size = lResults.size();
+      double _divide = ((_fold).doubleValue() / _size);
+      pw.printf("Average time taken: %02f milliseconds.\n", Double.valueOf(_divide));
+      final Function1<RunOptimisation.ResultRecord, Double> _function_2 = (RunOptimisation.ResultRecord it) -> {
+        return Double.valueOf(it.maxCRA);
+      };
+      final RunOptimisation.ResultRecord bestResult = IterableExtensions.<RunOptimisation.ResultRecord, Double>maxBy(lResults, _function_2);
+      String _xifexpression = null;
+      if (bestResult.hasUnassignedFeatures) {
+        _xifexpression = "invalid";
+      } else {
+        _xifexpression = "valid";
+      }
+      pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", Double.valueOf(bestResult.maxCRA), 
+        Long.valueOf(bestResult.bestModelHashCode), _xifexpression);
+      pw.close();
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
   
   /**
@@ -200,7 +220,8 @@ public class RunOptimisation {
         final File fResults = new File((pathPrefix + "/final/results.txt"));
         final PrintWriter pw = new PrintWriter(fResults);
         System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
-        pw.printf("Experiment using spec \"%s\" and model \"%s\". Running for %01d generations with a population size of %01d.\n\n", optSpecName, inputDesc.modelName, Integer.valueOf(inputDesc.generations), Integer.valueOf(inputDesc.populationSize));
+        pw.printf(
+          "Experiment using spec \"%s\" and model \"%s\". Running for %01d generations with a population size of %01d.\n\n", optSpecName, inputDesc.modelName, Integer.valueOf(inputDesc.generations), Integer.valueOf(inputDesc.populationSize));
         pw.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
         final Consumer<Pair<EObject, Double>> _function_5 = (Pair<EObject, Double> p) -> {
           EObject _key_1 = p.getKey();

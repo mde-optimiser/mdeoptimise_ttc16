@@ -19,7 +19,18 @@ class RunOptimisation {
 	static val Injector injector = new MDEOptimiseStandaloneSetup().createInjectorAndDoEMFRegistration()
 
 	def static void main(String[] args) {
-		injector.getInstance(RunOptimisation).run()
+		val app = injector.getInstance(RunOptimisation)
+
+		if (args.empty) {
+			// Run all experiments
+			app.run()
+		} else {
+			// Expect two numerical arguments specifying the index of the spec and the index of the model, resp.
+			val specIdx = Integer.parseInt(args.get(0))
+			val modelIdx = Integer.parseInt(args.get(1))
+
+			app.runBatchForSpecAndModel(optSpecs.get(specIdx), inputModels.get(modelIdx))
+		}
 	}
 
 	@Inject
@@ -44,45 +55,56 @@ class RunOptimisation {
 		}
 	}
 
+	/*
+	 * Defining the experiments
+	 */
+	static val optSpecs = #["ttc"]
+	static val inputModels = #[new InputModelDesc("TTC_InputRDG_A", 100, 20),
+		new InputModelDesc("TTC_InputRDG_B", 100, 20), new InputModelDesc("TTC_InputRDG_C", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_D", 1000, 50), new InputModelDesc("TTC_InputRDG_E", 1000, 50)]
+
 	/**
 	 * Run all experiments
 	 */
 	def run() {
-		val optSpecs = #["ttc"]
-		val inputModels = #[new InputModelDesc("TTC_InputRDG_A", 100, 20),
-			new InputModelDesc("TTC_InputRDG_B", 100, 20), new InputModelDesc("TTC_InputRDG_C", 1000, 50),
-			new InputModelDesc("TTC_InputRDG_D", 1000, 50), new InputModelDesc("TTC_InputRDG_E", 1000, 50)]
-
 		optSpecs.forEach [ optSpec |
 			inputModels.forEach [ inputDesc |
-				val lResults = new LinkedList<ResultRecord>()
-				(0 ..< 10).forEach [ idx |
-					lResults.add(runOneExperiment(optSpec, inputDesc, idx))
-				]
-
-				// Write averaged results for this specification and model
-				val File f = new File(
-					"gen/models/ttc/" + optSpec + "/" + inputDesc.modelName + "/overall_results" +
-						new SimpleDateFormat("yyMMdd-HHmmss").format(new Date()) + ".txt")
-				val PrintWriter pw = new PrintWriter(f)
-				pw.println("Overall results for this experiment")
-				pw.println("===================================")
-				pw.println
-				pw.printf("Experiment with spec \"%s\" and model \"%s\".\n", optSpec, inputDesc.modelName)
-				pw.printf("Running for %01d generations with a population size of %01d.\n", inputDesc.generations, inputDesc.populationSize)
-				pw.println
-				pw.printf("Average time taken: %02f milliseconds.\n",
-					lResults.fold(0.0, [acc, r|acc + r.timeTaken]) / lResults.size)
-				val bestResult = lResults.maxBy[maxCRA]
-				pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
-					bestResult.bestModelHashCode, (if (bestResult.hasUnassignedFeatures) {
-						"invalid"
-					} else {
-						"valid"
-					}))
-				pw.close
+				runBatchForSpecAndModel(optSpec, inputDesc)
 			]
 		]
+	}
+
+	/**
+	 * Run a batch of experiments for the given spec and model, recording overall outcomes in a separate file.
+	 */
+	def runBatchForSpecAndModel(String optSpec, InputModelDesc inputDesc) {
+		val lResults = new LinkedList<ResultRecord>()
+		(0 ..< 10).forEach [ idx |
+			lResults.add(runOneExperiment(optSpec, inputDesc, idx))
+		]
+
+		// Write averaged results for this specification and model
+		val File f = new File(
+			"gen/models/ttc/" + optSpec + "/" + inputDesc.modelName + "/overall_results" +
+				new SimpleDateFormat("yyMMdd-HHmmss").format(new Date()) + ".txt")
+		val PrintWriter pw = new PrintWriter(f)
+		pw.println("Overall results for this experiment")
+		pw.println("===================================")
+		pw.println
+		pw.printf("Experiment with spec \"%s\" and model \"%s\".\n", optSpec, inputDesc.modelName)
+		pw.printf("Running for %01d generations with a population size of %01d.\n", inputDesc.generations,
+			inputDesc.populationSize)
+		pw.println
+		pw.printf("Average time taken: %02f milliseconds.\n",
+			lResults.fold(0.0, [acc, r|acc + r.timeTaken]) / lResults.size)
+		val bestResult = lResults.maxBy[maxCRA]
+		pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
+			bestResult.bestModelHashCode, (if (bestResult.hasUnassignedFeatures) {
+				"invalid"
+			} else {
+				"valid"
+			}))
+		pw.close
 	}
 
 	/**
@@ -141,7 +163,8 @@ class RunOptimisation {
 			val fResults = new File(pathPrefix + "/final/results.txt")
 			val pw = new PrintWriter(fResults)
 			System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
-			pw.printf ("Experiment using spec \"%s\" and model \"%s\". Running for %01d generations with a population size of %01d.\n\n",
+			pw.printf(
+				"Experiment using spec \"%s\" and model \"%s\". Running for %01d generations with a population size of %01d.\n\n",
 				optSpecName, inputDesc.modelName, inputDesc.generations, inputDesc.populationSize)
 			pw.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
 			sortedResults.forEach [ p |
