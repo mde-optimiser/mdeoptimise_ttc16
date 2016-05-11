@@ -3,7 +3,10 @@ package uk.ac.kcl.mdeoptimise.ttc16.implementation;
 import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -12,10 +15,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.DoubleExtensions;
@@ -46,6 +54,8 @@ public class RunOptimisation {
     public long bestModelHashCode;
     
     public boolean hasUnassignedFeatures;
+    
+    public String bestModelPath;
   }
   
   private static class InputModelDesc {
@@ -88,7 +98,7 @@ public class RunOptimisation {
    */
   private final static List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
   
-  private final static List<RunOptimisation.InputModelDesc> inputModels = Collections.<RunOptimisation.InputModelDesc>unmodifiableList(CollectionLiterals.<RunOptimisation.InputModelDesc>newArrayList(new RunOptimisation.InputModelDesc("TTC_InputRDG_A", 100, 20), new RunOptimisation.InputModelDesc("TTC_InputRDG_B", 100, 20), new RunOptimisation.InputModelDesc("TTC_InputRDG_C", 1000, 50), new RunOptimisation.InputModelDesc("TTC_InputRDG_D", 1000, 50), new RunOptimisation.InputModelDesc("TTC_InputRDG_E", 1000, 50)));
+  private final static List<RunOptimisation.InputModelDesc> inputModels = Collections.<RunOptimisation.InputModelDesc>unmodifiableList(CollectionLiterals.<RunOptimisation.InputModelDesc>newArrayList(new RunOptimisation.InputModelDesc("TTC_InputRDG_A", 100, 20)));
   
   /**
    * Run all experiments
@@ -146,9 +156,50 @@ public class RunOptimisation {
       } else {
         _xifexpression = "valid";
       }
-      pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", Double.valueOf(bestResult.maxCRA), 
+      pw.printf("Best CRA was %s for model with hash code %08X. This model was %s.\n", Double.valueOf(bestResult.maxCRA), 
         Long.valueOf(bestResult.bestModelHashCode), _xifexpression);
+      pw.println();
+      pw.println("Evaluation: CRAIndexCalculator.jar");
+      pw.println("===================================");
+      pw.println();
+      pw.printf("Model path: %s\n", bestResult.bestModelPath);
+      String _runEvaluationJarAgainstBestModel = this.runEvaluationJarAgainstBestModel(bestResult.bestModelPath);
+      pw.print(_runEvaluationJarAgainstBestModel);
       pw.close();
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+  
+  public String runEvaluationJarAgainstBestModel(final String modelPath) {
+    try {
+      String _xblockexpression = null;
+      {
+        Runtime _runtime = Runtime.getRuntime();
+        Process evaluatorJar = _runtime.exec(("java -jar evaluation/CRAIndexCalculator.jar " + modelPath));
+        InputStream _inputStream = evaluatorJar.getInputStream();
+        InputStreamReader _inputStreamReader = new InputStreamReader(_inputStream);
+        BufferedReader _bufferedReader = new BufferedReader(_inputStreamReader);
+        Stream<String> _lines = _bufferedReader.lines();
+        Stream<String> _parallel = _lines.parallel();
+        Collector<CharSequence, ?, String> _joining = Collectors.joining("\n");
+        String output = _parallel.collect(_joining);
+        int _length = output.length();
+        boolean _equals = (_length == 0);
+        if (_equals) {
+          String _output = output;
+          InputStream _errorStream = evaluatorJar.getErrorStream();
+          InputStreamReader _inputStreamReader_1 = new InputStreamReader(_errorStream);
+          BufferedReader _bufferedReader_1 = new BufferedReader(_inputStreamReader_1);
+          Stream<String> _lines_1 = _bufferedReader_1.lines();
+          Stream<String> _parallel_1 = _lines_1.parallel();
+          Collector<CharSequence, ?, String> _joining_1 = Collectors.joining("\n");
+          String _collect = _parallel_1.collect(_joining_1);
+          output = (_output + _collect);
+        }
+        _xblockexpression = output;
+      }
+      return _xblockexpression;
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
@@ -217,6 +268,12 @@ public class RunOptimisation {
         Double _value = _head_1.getValue();
         results.maxCRA = (_value).doubleValue();
         results.hasUnassignedFeatures = false;
+        Pair<EObject, Double> _head_2 = IterableExtensions.<Pair<EObject, Double>>head(sortedResults);
+        EObject _key_1 = _head_2.getKey();
+        Resource _eResource = _key_1.eResource();
+        URI _uRI = _eResource.getURI();
+        String _string = _uRI.toString();
+        results.bestModelPath = _string;
         final File fResults = new File((pathPrefix + "/final/results.txt"));
         final PrintWriter pw = new PrintWriter(fResults);
         System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
@@ -224,12 +281,12 @@ public class RunOptimisation {
           "Experiment using spec \"%s\" and model \"%s\". Running for %01d generations with a population size of %01d.\n\n", optSpecName, inputDesc.modelName, Integer.valueOf(inputDesc.generations), Integer.valueOf(inputDesc.populationSize));
         pw.printf("Total time taken for this experiment: %02f milliseconds.\n", Double.valueOf(results.timeTaken));
         final Consumer<Pair<EObject, Double>> _function_5 = (Pair<EObject, Double> p) -> {
-          EObject _key_1 = p.getKey();
-          int _hashCode_1 = _key_1.hashCode();
+          EObject _key_2 = p.getKey();
+          int _hashCode_1 = _key_2.hashCode();
           Double _value_1 = p.getValue();
           System.out.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_1), _value_1);
-          EObject _key_2 = p.getKey();
-          int _hashCode_2 = _key_2.hashCode();
+          EObject _key_3 = p.getKey();
+          int _hashCode_2 = _key_3.hashCode();
           Double _value_2 = p.getValue();
           pw.printf("Result model %08X at CRA %02f.\n", Integer.valueOf(_hashCode_2), _value_2);
         };
