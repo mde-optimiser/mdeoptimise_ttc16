@@ -102,6 +102,9 @@ public class RunOptimisation {
           pw.println("Overall results for this experiment");
           pw.println("===================================");
           pw.println();
+          pw.printf("Experiment with spec \"%s\" and model \"%s\".\n", optSpec, inputDesc.modelName);
+          pw.printf("Running for %01d generations with a population size of %01d.\n", Integer.valueOf(inputDesc.generations), Integer.valueOf(inputDesc.populationSize));
+          pw.println();
           final Function2<Double, RunOptimisation.ResultRecord, Double> _function_3 = (Double acc, RunOptimisation.ResultRecord r) -> {
             return Double.valueOf(((acc).doubleValue() + r.timeTaken));
           };

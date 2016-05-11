@@ -68,6 +68,9 @@ class RunOptimisation {
 				pw.println("Overall results for this experiment")
 				pw.println("===================================")
 				pw.println
+				pw.printf("Experiment with spec \"%s\" and model \"%s\".\n", optSpec, inputDesc.modelName)
+				pw.printf("Running for %01d generations with a population size of %01d.\n", inputDesc.generations, inputDesc.populationSize)
+				pw.println
 				pw.printf("Average time taken: %02f milliseconds.\n",
 					lResults.fold(0.0, [acc, r|acc + r.timeTaken]) / lResults.size)
 				val bestResult = lResults.maxBy[maxCRA]
