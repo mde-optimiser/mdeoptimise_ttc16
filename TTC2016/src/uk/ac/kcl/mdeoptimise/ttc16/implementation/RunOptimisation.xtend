@@ -64,9 +64,9 @@ class RunOptimisation {
 	 * Defining the experiments
 	 */
 	static val optSpecs = #["ttc"]
-	static val inputModels = #[new InputModelDesc("TTC_InputRDG_A", 100, 20)]//,
-		//new InputModelDesc("TTC_InputRDG_B", 100, 20)//, new InputModelDesc("TTC_InputRDG_C", 1000, 50),
-		//new InputModelDesc("TTC_InputRDG_D", 1000, 50), new InputModelDesc("TTC_InputRDG_E", 1000, 50)]
+	static val inputModels = #[new InputModelDesc("TTC_InputRDG_A", 100, 20),
+		new InputModelDesc("TTC_InputRDG_B", 100, 20), new InputModelDesc("TTC_InputRDG_C", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_D", 1000, 50), new InputModelDesc("TTC_InputRDG_E", 1000, 50)]
 
 	/**
 	 * Run all experiments
@@ -87,10 +87,6 @@ class RunOptimisation {
 		(0 ..< 10).forEach [ idx |
 			lResults.add(runOneExperiment(optSpec, inputDesc, idx))
 		]
-
-
-		
-
 
 		// Write averaged results for this specification and model
 		val File f = new File(

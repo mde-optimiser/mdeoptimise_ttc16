@@ -98,7 +98,7 @@ public class RunOptimisation {
    */
   private final static List<String> optSpecs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("ttc"));
   
-  private final static List<RunOptimisation.InputModelDesc> inputModels = Collections.<RunOptimisation.InputModelDesc>unmodifiableList(CollectionLiterals.<RunOptimisation.InputModelDesc>newArrayList(new RunOptimisation.InputModelDesc("TTC_InputRDG_A", 100, 20)));
+  private final static List<RunOptimisation.InputModelDesc> inputModels = Collections.<RunOptimisation.InputModelDesc>unmodifiableList(CollectionLiterals.<RunOptimisation.InputModelDesc>newArrayList(new RunOptimisation.InputModelDesc("TTC_InputRDG_A", 100, 20), new RunOptimisation.InputModelDesc("TTC_InputRDG_B", 100, 20), new RunOptimisation.InputModelDesc("TTC_InputRDG_C", 1000, 50), new RunOptimisation.InputModelDesc("TTC_InputRDG_D", 1000, 50), new RunOptimisation.InputModelDesc("TTC_InputRDG_E", 1000, 50)));
   
   /**
    * Run all experiments
