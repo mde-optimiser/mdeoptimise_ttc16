@@ -64,9 +64,32 @@ class RunOptimisation {
 	 * Defining the experiments
 	 */
 	static val optSpecs = #["ttc"]
-	static val inputModels = #[new InputModelDesc("TTC_InputRDG_A", 100, 20),
-		new InputModelDesc("TTC_InputRDG_B", 100, 20), new InputModelDesc("TTC_InputRDG_C", 1000, 50),
-		new InputModelDesc("TTC_InputRDG_D", 1000, 50), new InputModelDesc("TTC_InputRDG_E", 1000, 50)]
+	static val inputModels = #[
+		new InputModelDesc("TTC_InputRDG_A", 1000, 50), 
+		new InputModelDesc("TTC_InputRDG_B", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_C", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_D", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_E", 1000, 50),
+		
+		new InputModelDesc("TTC_InputRDG_A", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_B", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_C", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_D", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_E", 1000, 100),
+			
+		new InputModelDesc("TTC_InputRDG_A", 100, 100),
+		new InputModelDesc("TTC_InputRDG_B", 100, 100),
+		new InputModelDesc("TTC_InputRDG_C", 100, 100),
+		new InputModelDesc("TTC_InputRDG_D", 100, 100),
+		new InputModelDesc("TTC_InputRDG_E", 100, 100),
+		
+		new InputModelDesc("TTC_InputRDG_A", 50, 20),
+		new InputModelDesc("TTC_InputRDG_B", 50, 20), 
+		new InputModelDesc("TTC_InputRDG_C", 50, 20),
+		new InputModelDesc("TTC_InputRDG_D", 50, 20), 
+		new InputModelDesc("TTC_InputRDG_E", 50, 20)
+		
+		]
 
 	/**
 	 * Run all experiments
