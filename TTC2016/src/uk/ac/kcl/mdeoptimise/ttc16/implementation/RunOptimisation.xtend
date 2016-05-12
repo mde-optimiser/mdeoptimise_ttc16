@@ -13,6 +13,10 @@ import uk.ac.kcl.MDEOptimiseStandaloneSetup
 import uk.ac.kcl.interpreter.OptimisationInterpreter
 import uk.ac.kcl.interpreter.algorithms.SimpleMO
 import uk.ac.kcl.mDEOptimise.Optimisation
+import java.io.InputStream
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.util.stream.Collectors
 
 class RunOptimisation {
 
@@ -41,6 +45,7 @@ class RunOptimisation {
 		public double maxCRA
 		public long bestModelHashCode
 		public boolean hasUnassignedFeatures
+		public String bestModelPath
 	}
 
 	private static class InputModelDesc {
@@ -59,9 +64,32 @@ class RunOptimisation {
 	 * Defining the experiments
 	 */
 	static val optSpecs = #["ttc"]
-	static val inputModels = #[new InputModelDesc("TTC_InputRDG_A", 100, 20),
-		new InputModelDesc("TTC_InputRDG_B", 100, 20), new InputModelDesc("TTC_InputRDG_C", 1000, 50),
-		new InputModelDesc("TTC_InputRDG_D", 1000, 50), new InputModelDesc("TTC_InputRDG_E", 1000, 50)]
+	static val inputModels = #[
+		new InputModelDesc("TTC_InputRDG_A", 1000, 50), 
+		new InputModelDesc("TTC_InputRDG_B", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_C", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_D", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_E", 1000, 50),
+		
+		new InputModelDesc("TTC_InputRDG_A", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_B", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_C", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_D", 1000, 100),
+		new InputModelDesc("TTC_InputRDG_E", 1000, 100),
+			
+		new InputModelDesc("TTC_InputRDG_A", 100, 100),
+		new InputModelDesc("TTC_InputRDG_B", 100, 100),
+		new InputModelDesc("TTC_InputRDG_C", 100, 100),
+		new InputModelDesc("TTC_InputRDG_D", 100, 100),
+		new InputModelDesc("TTC_InputRDG_E", 100, 100),
+		
+		new InputModelDesc("TTC_InputRDG_A", 50, 20),
+		new InputModelDesc("TTC_InputRDG_B", 50, 20), 
+		new InputModelDesc("TTC_InputRDG_C", 50, 20),
+		new InputModelDesc("TTC_InputRDG_D", 50, 20), 
+		new InputModelDesc("TTC_InputRDG_E", 50, 20)
+		
+		]
 
 	/**
 	 * Run all experiments
@@ -98,15 +126,36 @@ class RunOptimisation {
 		pw.printf("Average time taken: %02f milliseconds.\n",
 			lResults.fold(0.0, [acc, r|acc + r.timeTaken]) / lResults.size)
 		val bestResult = lResults.maxBy[maxCRA]
-		pw.printf("Best CRA was %02f for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
+		pw.printf("Best CRA was %s for model with hash code %08X. This model was %s.\n", bestResult.maxCRA,
 			bestResult.bestModelHashCode, (if (bestResult.hasUnassignedFeatures) {
 				"invalid"
 			} else {
 				"valid"
 			}))
+		
+		pw.println
+		pw.println("Evaluation: CRAIndexCalculator.jar")
+		pw.println("===================================")
+		pw.println
+		pw.printf("Model path: %s\n", bestResult.bestModelPath)
+		pw.print(runEvaluationJarAgainstBestModel(bestResult.bestModelPath))
 		pw.close
+		
 	}
-
+	
+	def String runEvaluationJarAgainstBestModel(String modelPath) {
+		
+		var evaluatorJar = Runtime.getRuntime().exec("java -jar evaluation/CRAIndexCalculator.jar " + modelPath)
+		
+		var output = new BufferedReader(new InputStreamReader(evaluatorJar.getInputStream())).lines().parallel().collect(Collectors.joining("\n"))
+		
+		if(output.length == 0){
+			output += new BufferedReader(new InputStreamReader(evaluatorJar.getErrorStream())).lines().parallel().collect(Collectors.joining("\n"))
+		}
+		
+		output
+	}
+	
 	/**
 	 * Run a single experiment and record its outcomes
 	 */
@@ -159,7 +208,8 @@ class RunOptimisation {
 			results.bestModelHashCode = sortedResults.head.key.hashCode
 			results.maxCRA = sortedResults.head.value
 			results.hasUnassignedFeatures = false
-
+			results.bestModelPath = sortedResults.head.key.eResource.URI.toString
+			
 			val fResults = new File(pathPrefix + "/final/results.txt")
 			val pw = new PrintWriter(fResults)
 			System.out.printf("Total time taken for this experiment: %02f milliseconds.\n", results.timeTaken)
