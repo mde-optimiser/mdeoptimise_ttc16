@@ -20,4 +20,9 @@ public class MinimiseClasslessFeatures extends AbstractModelQueryFitnessFunction
     int _size = IterableExtensions.size(_filter);
     return ((-1.0) * _size);
   }
+  
+  @Override
+  public String getName() {
+    return "Mimise classless features";
+  }
 }

@@ -2,9 +2,9 @@ package uk.ac.kcl.mdeoptimise.ttc16.implementation
 
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.EObject
-import uk.ac.kcl.interpreter.FitnessFunction
+import uk.ac.kcl.interpreter.IGuidanceFunction
 
-abstract class AbstractModelQueryFitnessFunction implements FitnessFunction {
+abstract class AbstractModelQueryFitnessFunction implements IGuidanceFunction {
 	/**
 	 * Helper function getting the value of the named feature (if it exists) for the given EObject.
 	 */

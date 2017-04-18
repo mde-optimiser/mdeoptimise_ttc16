@@ -6,10 +6,10 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
-import uk.ac.kcl.interpreter.FitnessFunction;
+import uk.ac.kcl.interpreter.IGuidanceFunction;
 
 @SuppressWarnings("all")
-public abstract class AbstractModelQueryFitnessFunction implements FitnessFunction {
+public abstract class AbstractModelQueryFitnessFunction implements IGuidanceFunction {
   /**
    * Helper function getting the value of the named feature (if it exists) for the given EObject.
    */

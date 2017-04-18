@@ -10,4 +10,8 @@ class MinimiseClasslessFeatures extends AbstractModelQueryFitnessFunction {
 			feature.getFeature("isEncapsulatedBy") == null
 		].size
 	}
+	
+	override getName() {
+		return "Mimise classless features"
+	}
 }
