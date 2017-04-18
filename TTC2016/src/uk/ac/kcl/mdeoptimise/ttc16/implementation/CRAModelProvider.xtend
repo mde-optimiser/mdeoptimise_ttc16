@@ -1,6 +1,5 @@
 package uk.ac.kcl.mdeoptimise.ttc16.implementation
 
-import com.google.inject.Inject
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -17,22 +16,25 @@ import uk.ac.kcl.interpreter.IModelProvider
 
 class CRAModelProvider implements IModelProvider {
 
-	@Inject
-	private ModelLoadHelper modelLoader
-
 	private String inputModelName
 	
 	val ResourceSet resourceSet = new ResourceSetImpl
 		
 	override initialModels(EPackage metamodel) {
-		modelLoader.registerPackage(metamodel)
-
-		#[modelLoader.loadModel("src/uk/ac/kcl/mdeoptimise/ttc16/models/" + inputModelName + ".xmi")].iterator
+		registerPackage(metamodel)
+		
+		#[loadModel("src/uk/ac/kcl/mdeoptimise/ttc16/models/" + inputModelName + ".xmi")].iterator
+	}
+	
+	def registerPackage(EPackage metamodel) {
+		resourceSet.packageRegistry.put(metamodel.nsURI, metamodel)
 	}
 	
 	def loadModel(String path) {
+		
 		val resource = resourceSet.createResource(URI.createURI(path))
 		resource.load(Collections.EMPTY_MAP)
+		
 		resource.allContents.head
 	}
 

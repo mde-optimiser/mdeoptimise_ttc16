@@ -43,7 +43,7 @@ class RunOptimisation {
 	}
 
 	@Inject
-	private ModelLoadHelper modelLoader
+	private CRAModelProvider modelLoader
 
 	private static class ResultRecord {
 		public double timeTaken
@@ -71,17 +71,18 @@ class RunOptimisation {
 	static val optSpecs = #["ttc"]
 	static val inputModels = #[
 
-		new InputModelDesc("TTC_InputRDG_A", 100, 40), 
-		new InputModelDesc("TTC_InputRDG_B", 100, 40),
-		new InputModelDesc("TTC_InputRDG_C", 100, 40),
-		new InputModelDesc("TTC_InputRDG_D", 100, 40),
-		new InputModelDesc("TTC_InputRDG_E", 100, 40),
+		new InputModelDesc("TTC_InputRDG_A", 100, 50), 
+		new InputModelDesc("TTC_InputRDG_B", 100, 50),
+		new InputModelDesc("TTC_InputRDG_C", 100, 50),
+		new InputModelDesc("TTC_InputRDG_D", 100, 50),
+		new InputModelDesc("TTC_InputRDG_E", 100, 50),
 
-		new InputModelDesc("TTC_InputRDG_A", 500, 40), 
-		new InputModelDesc("TTC_InputRDG_B", 500, 40),
-		new InputModelDesc("TTC_InputRDG_C", 500, 40),
-		new InputModelDesc("TTC_InputRDG_D", 500, 40),
-		new InputModelDesc("TTC_InputRDG_E", 500, 40)
+		new InputModelDesc("TTC_InputRDG_A", 1000, 50), 
+		new InputModelDesc("TTC_InputRDG_B", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_C", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_D", 1000, 50),
+		new InputModelDesc("TTC_InputRDG_E", 1000, 50)
+
 		]
 
 	/**
@@ -104,7 +105,7 @@ class RunOptimisation {
 	def runBatchForSpecAndModel(String optSpec, InputModelDesc inputDesc, String batchStartTime, int batchId) {
 		val lResults = new LinkedList<ResultRecord>()
 
-		(0 ..< 10).forEach [ idx |
+		(0 ..< 30).forEach [ idx |
 			lResults.add(runOneExperiment(optSpec, inputDesc, batchStartTime, batchId, idx))
 		]
 
@@ -177,7 +178,7 @@ class RunOptimisation {
 		System.out.printf("Starting %01dth experiment run for specification \"%s\" with input model \"%s\".\n", runIdx,
 			optSpecName, inputDesc.modelName)
 
-		val pathPrefix = "gen/models/ttc/" + optSpecName + "/" + batchStartTime + "/" + inputDesc.modelName + "-configuration-" + batchId + "/" + runIdx
+		val pathPrefix = "gen/models/spec_results/" + optSpecName + "/" + batchStartTime + "/" + inputDesc.modelName + "-configuration-" + batchId + "/" + runIdx
 			
 
 		val serializedRulesPrefix = pathPrefix + "/rules/"
